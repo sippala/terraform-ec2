@@ -93,7 +93,7 @@ resource "aws_instance" "ec2_cc" {
   }
 
   provisioner "file" {
-    source      = "bootstrap_zk.sh"
+    source      = "bootstrap.sh"
     destination = "/tmp/bootstrap.sh"
   }
 
@@ -133,7 +133,7 @@ resource "aws_instance" "ec2_zk" {
   }
 
   provisioner "file" {
-    source      = "bootstrap_zk.sh"
+    source      = "bootstrap.sh"
     destination = "/tmp/bootstrap.sh"
   }
 
