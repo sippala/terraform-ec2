@@ -13,3 +13,5 @@ provider "aws" {
     role_arn= "${local.this_role_arn}"
   }
 }
+
+provider "kubernetes" {}
