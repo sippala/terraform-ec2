@@ -1,0 +1,43 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kafka
+  namespace: monitoring
+  labels:
+    k8s-app: kafka
+    scrape: "true"
+spec:
+  endpoints:
+  - interval: 10s
+    path: /metrics
+    port: node-metrics
+  - interval : 10s
+    path: /metrics
+    port: kafka-metrics
+  namespaceSelector:
+    matchNames:
+    - monitoring
+  selector:
+    matchLabels:
+      component: kafka
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app: jmx-exporter
+    scrape: "true"
+  name: jmx-exporter
+  namespace: monitoring
+spec:
+  endpoints:
+  - interval: 15s
+    path: /metrics
+    port: jmx-metrics
+  namespaceSelector:
+    matchNames:
+    - monitoring
+  selector:
+    matchLabels:
+      app: jmx-exporter
