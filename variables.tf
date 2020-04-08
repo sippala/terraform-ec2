@@ -47,6 +47,22 @@ variable "bk_profile_name" { default = "bk-kafka" }
 variable "cc_profile_name" { default = "cc-kafka" }
 variable "zk_profile_name" { default = "zk-kafka" }
 
-variable "k8s_file"        { default = "k8s_script.sh" }
-variable "k8s_rendered"    { default = "k8s_rendered.sh" }
+variable "k8s_file_path"   { default = "~/terraform-ec2"
 variable "k8s_yaml"        { default = "kafka_k8s.yaml" }
+  
+variable "kafka_port"      {
+  type = "map"
+  default = {
+    "node-metrics"  = "9100"
+    "kafka-metrics" = "9308"
+  }
+}
+
+variable "jmx_port"        {
+  type = "map"
+  default = {
+    "jmx-port" = "8080"
+  }
+}
+  
+variable "tf-statefile-prefix" { default = "" }

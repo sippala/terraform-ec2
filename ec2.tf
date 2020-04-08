@@ -10,21 +10,11 @@ module "iam" {
 
 data "template_file" "ansible_file" {
   template = "${file("${var.ansible_file}")}"
-  vars {
+  vars = {
     zookeeper_ips = "${join(" ", aws_instance.ec2_zk.*.private_ip)}"
     broker_ips    = "${join(" ", aws_instance.ec2_broker.*.private_ip)}"
     cc_ips        = "${join(" ", aws_instance.ec2_cc.*.private_ip)}"
     user          = "${var.user}"
-  }
-}
-
-data "template_file" "k8s_file" {
-  template = "${file("${var.k8s_file}")}"
-  vars {
-    all_ips       = "${join(" ", aws_instance.ec2_zk.*.private_ip, aws_instance.ec2_broker.*.private_ip)}"
-    zookeeper_ips = "${join(" ", aws_instance.ec2_zk.*.private_ip)}"
-    broker_ips    = "${join(" ", aws_instance.ec2_broker.*.private_ip)}"
-    cc_ips        = "${join(" ", aws_instance.ec2_cc.*.private_ip)}"
   }
 }
 
@@ -43,13 +33,12 @@ resource "aws_instance" "ec2_broker" {
   vpc_security_group_ids      = ["${aws_security_group.kafka_sg.id}"]
   associate_public_ip_address = "${var.public_ip_allow}"
   source_dest_check           = "${var.source_dest_check}"
-  #iam_instance_profile       = "${element(aws_iam_instance_profile.bk_profile.*.name, count.index)}"
   iam_instance_profile        = "${aws_iam_instance_profile.bk_profile.name}"
 
   connection {
     host        = "${self.private_ip}"
     user        = "ubuntu"
-    private_key = "${file("~/${var.aws-account}-cn-kafka.pem")}"
+    private_key = "${file("~/${var.aws-account}-kafka.pem")}"
   }
 
   provisioner "file" {
@@ -64,7 +53,7 @@ resource "aws_instance" "ec2_broker" {
     ]
   }
 
-  tags {
+  tags = {
     Name        = "kafka-broker-${var.instance_prefix}-${count.index + 1}"
   }
 }
@@ -83,13 +72,12 @@ resource "aws_instance" "ec2_cc" {
   vpc_security_group_ids      = ["${aws_security_group.kafka_sg.id}"]
   associate_public_ip_address = "${var.public_ip_allow}"
   source_dest_check           = "${var.source_dest_check}"
-  #iam_instance_profile       = "${element(aws_iam_instance_profile.cc_profile.*.name, count.index)}"
   iam_instance_profile        = "${aws_iam_instance_profile.bk_profile.name}"
 
   connection {
     host        = "${self.private_ip}"
     user        = "ubuntu"
-    private_key = "${file("~/${var.aws-account}-cn-kafka.pem")}"
+    private_key = "${file("~/${var.aws-account}-kafka.pem")}"
   }
 
   provisioner "file" {
@@ -104,7 +92,7 @@ resource "aws_instance" "ec2_cc" {
     ]
   }
 
-  tags {
+  tags = {
     Name        = "kafka-cc-${var.instance_prefix}-${count.index + 1}"
   }
 }
@@ -123,13 +111,12 @@ resource "aws_instance" "ec2_zk" {
   vpc_security_group_ids      = ["${aws_security_group.kafka_sg.id}"]
   associate_public_ip_address = "${var.public_ip_allow}"
   source_dest_check           = "${var.source_dest_check}"
-  #iam_instance_profile       = "${element(aws_iam_instance_profile.zk_profile.*.name, count.index)}"
   iam_instance_profile        = "${aws_iam_instance_profile.bk_profile.name}"
 
   connection {
     host        = "${self.private_ip}"
     user        = "ubuntu"
-    private_key = "${file("~/${var.aws-account}-cn-kafka.pem")}"
+    private_key = "${file("~/${var.aws-account}-kafka.pem")}"
   }
 
   provisioner "file" {
@@ -144,7 +131,7 @@ resource "aws_instance" "ec2_zk" {
     ]
   }
 
-  tags {
+  tags = {
     Name        = "kafka-zookeeper-${var.instance_prefix}-${count.index + 1}"
   }
 }
@@ -159,13 +146,8 @@ resource "local_file" "foo" {
   filename = "${var.hosts_file}"
 }
 
-resource "local_file" "k8s" {
-  content  = "${data.template_file.k8s_file.rendered}"
-  filename = "${var.k8s_rendered}"
-}
-
 resource "null_resource" "script" {
-  triggers {
+  triggers = {
     build_number       = "${timestamp()}"
   }
   provisioner "local-exec" {
@@ -174,12 +156,8 @@ resource "null_resource" "script" {
       bash ${var.hosts_file} >> ${var.dir_path}/hosts.yml
       #ansible -i ${var.dir_path}/hosts.yml all -m ping
       ANSIBLE_HOST_KEY_CHECKING=False ansible-playbook -i ${var.dir_path}/hosts.yml ${var.dir_path}/all.yml
-    EOT
-    command =<<EOT
-      rm ${var.k8s_yaml}
-      bash ${var.k8s_rendered} >> ${var.k8s_yaml}
-      kubectl apply -f ${var.k8s_yaml} -n monitoring
+      kubectl apply -f ${var.k8s_file_path}/${var.k8s_yaml} -n monitoring
     EOT
   }
-  depends_on  = ["aws_instance.ec2_zk", "aws_instance.ec2_broker", "aws_instance.ec2_cc", "local_file.foo", "local_file.k8s"]
+  depends_on  = ["aws_instance.ec2_zk", "aws_instance.ec2_broker", "aws_instance.ec2_cc", "local_file.foo"]
 }
