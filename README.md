@@ -12,3 +12,5 @@ and then ansible playbook apply commands are run to do the installation of zooke
 This will also create k8s endpoints and services that are required to monitor kafka_exporter, node_exporter and jmx_exporter metrics using terraform kubernetes provider, we also need servicemonitors for all these metrics to be monitored on prometheus that's running on k8s. But serivcemonitor isn't part of terraform kubernetes provider, we have to use third party prometheus provider or use kubectl apply on a yaml file (kafka_k8s.yaml) to create service monitor. I used yaml file here.
 
 As a part of bootstrap action while creating the ec2 instances, each instance will be installed with node-exporter, kafka-exporter which are run as service to continously give metrics in prometheus format. Prometheus installed on k8s will scrape metrics from these instances using ports defined in k8s endpoints.
+
+Note: This will use your default k8s config in ```~/.kube/config```
